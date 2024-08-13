@@ -7,7 +7,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type task struct {
+	description string
+	done        bool
+}
+
 type model struct {
+	tasks    []task
 	quitting bool
 }
 
@@ -33,11 +39,28 @@ func (m model) View() string {
 	if m.quitting {
 		return "Quitting...\n"
 	}
-	return "Hello World!\n"
+
+	output := ""
+
+	for _, task := range m.tasks {
+		var doneStr string
+		if task.done {
+			doneStr = "x"
+		} else {
+			doneStr = " "
+		}
+
+		output += fmt.Sprintf("[%s] %s\n", doneStr, task.description)
+	}
+	return output
 }
 
 func main() {
-	m := model{quitting: false}
+	tasks := []task{
+		{description: "Example", done: false},
+		{description: "Example 2", done: true},
+	}
+	m := model{quitting: false, tasks: tasks}
 
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		fmt.Println("Error running program:", err)
