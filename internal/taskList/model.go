@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 /* Task Model
@@ -15,14 +16,21 @@ import (
 type Model struct {
 	err      error
 	list     list.Model
-	tasks    []task.Task
 	quitting bool
 	loaded   bool
-	focused  int
+	selected int
 }
 
 func NewModel(width, height int) *Model {
-	newList := list.New([]list.Item{}, list.NewDefaultDelegate(), width, height)
+	delegate := list.NewDefaultDelegate()
+
+	// Set colors for selected task
+	focusedColor := lipgloss.Color("13")
+	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+		Foreground(focusedColor).
+		BorderLeftForeground(focusedColor)
+
+	newList := list.New([]list.Item{}, delegate, width, height)
 	newList.SetItems([]list.Item{
 		task.NewTask(task.Pending, "Example Task", "This is an example task."),
 		task.NewTask(task.InProgress, "Example Task 2", "This is an example task."),
@@ -30,9 +38,26 @@ func NewModel(width, height int) *Model {
 	})
 
 	return &Model{
-		list: newList,
+		list:     newList,
+		selected: 0,
 	}
 }
+
+func (m Model) SelectPrev() {
+	if m.selected > 0 {
+		m.selected--
+		m.list.Select(m.selected)
+	}
+}
+
+func (m Model) SelectNext() {
+	if m.selected < len(m.list.Items())-1 {
+		m.selected++
+		m.list.Select(m.selected)
+	}
+}
+
+/* list.Item interface */
 
 func (m Model) Init() tea.Cmd {
 	return nil
@@ -49,9 +74,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			m.quitting = true
 			return m, tea.Quit
+		case "up", "k":
+			m.SelectPrev()
+		case "down", "j":
+			m.SelectNext()
 		}
 	}
-	return m, nil
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
 }
 
 func (m Model) View() string {
