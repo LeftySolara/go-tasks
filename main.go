@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	tasklist "tasks/internal/taskList"
+	tasklist "tasks/internal/ui/taskList"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
