@@ -8,12 +8,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-/* Task Model
+/* Task List
 *
 * A Bubble Tea model used to display the task list.
  */
 
-type Model struct {
+type TaskList struct {
 	err      error
 	list     list.Model
 	quitting bool
@@ -21,7 +21,7 @@ type Model struct {
 	selected int
 }
 
-func NewModel(width, height int) *Model {
+func NewTaskList(width, height int) *TaskList {
 	delegate := list.NewDefaultDelegate()
 
 	// Set colors for selected task
@@ -37,65 +37,65 @@ func NewModel(width, height int) *Model {
 		task.NewTask(task.Done, "Example Task 3", "This is an example task."),
 	})
 
-	return &Model{
+	return &TaskList{
 		list:     newList,
 		selected: 0,
 	}
 }
 
-func (m Model) SelectPrev() {
-	if m.selected > 0 {
-		m.selected--
-		m.list.Select(m.selected)
+func (taskList TaskList) SelectPrev() {
+	if taskList.selected > 0 {
+		taskList.selected--
+		taskList.list.Select(taskList.selected)
 	}
 }
 
-func (m Model) SelectNext() {
-	if m.selected < len(m.list.Items())-1 {
-		m.selected++
-		m.list.Select(m.selected)
+func (taskList TaskList) SelectNext() {
+	if taskList.selected < len(taskList.list.Items())-1 {
+		taskList.selected++
+		taskList.list.Select(taskList.selected)
 	}
 }
 
 /* list.Item interface */
 
-func (m Model) Init() tea.Cmd {
+func (taskList TaskList) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (taskList TaskList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width)
-		m.list.SetHeight(msg.Height)
-		if !m.loaded {
-			m.loaded = true
+		taskList.list.SetWidth(msg.Width)
+		taskList.list.SetHeight(msg.Height)
+		if !taskList.loaded {
+			taskList.loaded = true
 		}
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			m.quitting = true
-			return m, tea.Quit
+			taskList.quitting = true
+			return taskList, tea.Quit
 		case "up", "k":
-			m.SelectPrev()
+			taskList.SelectPrev()
 		case "down", "j":
-			m.SelectNext()
+			taskList.SelectNext()
 		}
 	}
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	taskList.list, cmd = taskList.list.Update(msg)
+	return taskList, cmd
 }
 
-func (m Model) View() string {
+func (taskList TaskList) View() string {
 	// Don't render to stdout if a "quit" key has been pressed.
 	// This prevents artifacts from appearing on the command line after program exit.
-	if m.quitting {
+	if taskList.quitting {
 		return ""
 	}
 
-	if m.loaded {
-		listView := m.list.View()
+	if taskList.loaded {
+		listView := taskList.list.View()
 		return listView
 	} else {
 		return "loading..."

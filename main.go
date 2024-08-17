@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	model := tasklist.NewModel(80, 40)
+	model := tasklist.NewTaskList(80, 40)
 
 	if _, err := tea.NewProgram(model).Run(); err != nil {
 		fmt.Println("Error running program:", err)
