@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"tasks/internal/task"
+	addtaskform "tasks/internal/ui/addTaskForm"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -19,24 +19,17 @@ func main() {
 }
 
 type model struct {
-	TaskListSelectedIndex int
-	TextInputTitle        textinput.Model
-	TextAreaDescription   textarea.Model
 	TaskList              list.Model
+	AddTaskForm           addtaskform.Model
+	TaskListSelectedIndex int
 	Quitting              bool
 	AddingTask            bool
-}
-
-// TODO: Add new task to the task list.
-func (m model) CreateTask() tea.Msg {
-	return nil
 }
 
 func NewModel() tea.Model {
 	m := model{}
 	m.TaskList = list.New([]list.Item{}, list.NewDefaultDelegate(), 80, 40)
-	m.TextInputTitle = textinput.New()
-	m.TextAreaDescription = textarea.New()
+	m.AddTaskForm = addtaskform.New()
 	m.Quitting = false
 	m.AddingTask = false
 
@@ -64,10 +57,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	if msg, ok := msg.(task.Task); ok {
+		newTask := msg
+		m.AddingTask = false
+		return m, m.TaskList.InsertItem(len(m.TaskList.Items()), newTask)
+	}
+
 	// Hand off the message and model to the appropriate update function for the
 	// appropriate view based on the current state.
 	if m.AddingTask {
-		return updateAddTaskForm(msg, m)
+		cmd := addtaskform.Update(msg, &m.AddTaskForm)
+		return m, cmd
 	}
 	return updateTaskList(msg, m)
 }
@@ -78,7 +78,7 @@ func (m model) View() string {
 		return "\n Exiting...\n\n"
 	}
 	if m.AddingTask {
-		s = addTaskFormView(m)
+		s = addtaskform.View(m.AddTaskForm)
 	} else {
 		s = taskListView(m)
 	}
@@ -105,49 +105,13 @@ func updateTaskList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 				m.TaskList.Select(m.TaskListSelectedIndex)
 			}
 		case "n":
-			m.TextInputTitle.Reset()
-			m.TextAreaDescription.Reset()
-			m.TextInputTitle.Focus()
+			addtaskform.Clear(&m.AddTaskForm)
 			m.AddingTask = true
 		}
 	}
 	return m, nil
 }
 
-func updateAddTaskForm(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "enter":
-			if m.TextInputTitle.Focused() {
-				m.TextInputTitle.Blur()
-				m.TextAreaDescription.Focus()
-				return m, textarea.Blink
-			} else {
-				m.AddingTask = false
-				return m, m.CreateTask
-			}
-		}
-	}
-	if m.TextInputTitle.Focused() {
-		m.TextInputTitle, cmd = m.TextInputTitle.Update(msg)
-		return m, cmd
-	} else {
-		m.TextAreaDescription, cmd = m.TextAreaDescription.Update(msg)
-		return m, cmd
-	}
-}
-
 func taskListView(m model) string {
 	return m.TaskList.View()
-}
-
-func addTaskFormView(m model) string {
-	var s string
-	s += m.TextInputTitle.View()
-	s += "\n"
-	s += m.TextAreaDescription.View()
-
-	return s
 }
