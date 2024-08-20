@@ -5,8 +5,8 @@ import (
 	"os"
 	"tasks/internal/task"
 	addtaskform "tasks/internal/ui/addTaskForm"
+	tasklist "tasks/internal/ui/taskList"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -19,16 +19,15 @@ func main() {
 }
 
 type model struct {
-	TaskList              list.Model
-	AddTaskForm           addtaskform.Model
-	TaskListSelectedIndex int
-	Quitting              bool
-	AddingTask            bool
+	TaskList    tasklist.Model
+	AddTaskForm addtaskform.Model
+	Quitting    bool
+	AddingTask  bool
 }
 
 func NewModel() tea.Model {
 	m := model{}
-	m.TaskList = list.New([]list.Item{}, list.NewDefaultDelegate(), 80, 40)
+	m.TaskList = tasklist.New()
 	m.AddTaskForm = addtaskform.New()
 	m.Quitting = false
 	m.AddingTask = false
@@ -60,7 +59,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(task.Task); ok {
 		newTask := msg
 		m.AddingTask = false
-		return m, m.TaskList.InsertItem(len(m.TaskList.Items()), newTask)
+		cmd := tasklist.AddNewTask(&m.TaskList, newTask)
+
+		return m, cmd
+	}
+
+	if _, ok := msg.(tasklist.AddTask); ok {
+		addtaskform.Clear(&m.AddTaskForm)
+		m.AddingTask = true
 	}
 
 	// Hand off the message and model to the appropriate update function for the
@@ -69,7 +75,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd := addtaskform.Update(msg, &m.AddTaskForm)
 		return m, cmd
 	}
-	return updateTaskList(msg, m)
+	return m, tasklist.Update(msg, &m.TaskList)
 }
 
 func (m model) View() string {
@@ -80,38 +86,8 @@ func (m model) View() string {
 	if m.AddingTask {
 		s = addtaskform.View(m.AddTaskForm)
 	} else {
-		s = taskListView(m)
+		s = tasklist.View(&m.TaskList)
 	}
 
 	return s
-}
-
-func updateTaskList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
-	if m.AddingTask {
-		return m, nil
-	}
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "k", "up":
-			if m.TaskListSelectedIndex > 0 {
-				m.TaskListSelectedIndex--
-				m.TaskList.Select(m.TaskListSelectedIndex)
-			}
-		case "j", "down":
-			if m.TaskListSelectedIndex < len(m.TaskList.Items())-1 {
-				m.TaskListSelectedIndex++
-				m.TaskList.Select(m.TaskListSelectedIndex)
-			}
-		case "n":
-			addtaskform.Clear(&m.AddTaskForm)
-			m.AddingTask = true
-		}
-	}
-	return m, nil
-}
-
-func taskListView(m model) string {
-	return m.TaskList.View()
 }
