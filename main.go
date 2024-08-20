@@ -95,13 +95,13 @@ func updateTaskList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "k", "up":
-			if m.TaskListSelectedIndex < len(m.TaskList.Items()) {
-				m.TaskListSelectedIndex++
+			if m.TaskListSelectedIndex > 0 {
+				m.TaskListSelectedIndex--
 				m.TaskList.Select(m.TaskListSelectedIndex)
 			}
 		case "j", "down":
-			if m.TaskListSelectedIndex > 0 {
-				m.TaskListSelectedIndex--
+			if m.TaskListSelectedIndex < len(m.TaskList.Items())-1 {
+				m.TaskListSelectedIndex++
 				m.TaskList.Select(m.TaskListSelectedIndex)
 			}
 		case "n":
